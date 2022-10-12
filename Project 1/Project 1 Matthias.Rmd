@@ -1,0 +1,328 @@
+---
+title: "Project 1"
+author: "Matthias Rathbun"
+date: "7/18/2022"
+output:
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+rm(list=ls())
+```
+
+# Set up the work space
+
+Reduce the number of displayed digits.
+
+```{r}
+options(
+  digits = 4
+)
+```
+
+
+This project analyzes the data set Grad_Admission. Variables description are as follows: 
+
+ID: Unique identification code for each student
+
+GRE: GRE Scores (out of 340) 
+
+TOEFL: TOEFL Scores (out of 120) 
+
+Urate: University Rating (out of 5)
+
+SOP: Statement of Purpose Strength (out of 5)
+
+LOR: Letter of Recommendation Strength (out of 5)
+
+CGPA: Undergraduate GPA (out of 4)
+
+Chance:Chance of Admission (ranging from 0 to 100)
+
+
+# 1. Load the data
+
+```{r}
+Grad <- read.csv(
+  file = "Grad_Admission.csv",
+  header = TRUE
+)
+```
+
+# 2. Print the dataset (Limit your print to include only the first and last ten observations)
+
+```{r}
+head(Grad[,-1],10)
+```
+
+
+```{r}
+tail(Grad,10)
+```
+
+# 3. Print a table of the n/mean/standard deviation/min/max of three of the Features (GRE, TOEFL, CGPA).
+
+
+```{r}
+
+summary(
+  object = Grad[c(2,3,7)]
+)
+
+```
+
+# 4. Make histograms for "Chance", "CGPA", "GRE" and "TOEFL"
+
+```{r}
+par(mfrow=c(2,2))
+hist(Grad[,8],xlab = "Chance", main = "Histogram of Chance")
+hist(Grad[,7],xlab = "CGPA", main = "Histogram of CGPA")
+hist(Grad[,2],xlab = "GRE", main = "Histogram of GRE")
+hist(Grad[,3],xlab = "TOEFL", main = "Histogram of TOEFL")
+
+```
+
+It seems that the probability distributions of Chance and CGPA are left skewed and they are not normal. The probability distributions of GRE and TOEFL are approximately normal.
+
+# 5. Consider “Chance” as the response variable and print scatter plots of each of the other six variables against it.
+
+```{r}
+par(mfrow=c(3,2))
+plot(x = Grad$GRE, y = Grad$Chance, xlab="GRE Score", ylab="Chance of Admission")
+plot(x = Grad$TOEFL, y = Grad$Chance, xlab="TOEFL Score", ylab="Chance of Admission")
+plot(x = Grad$Urate, y = Grad$Chance, xlab="University Rating", ylab="Chance of Admission")
+plot(x = Grad$SOP, y = Grad$Chance, xlab="Statement of Purpose Strength", ylab="Chance of Admission")
+plot(x = Grad$LOR, y = Grad$Chance, xlab="Letter of Recomendation Strength", ylab="Chance of Admission")
+plot(x = Grad$CGPA, y = Grad$Chance, xlab="Undergraduate GPA", ylab="Chance of Admission")
+```
+
+# 6. Draw your initial conclusions about the relationship between independent variables and the response variable based on the scatterplot.
+
+There seems to be a strong positive linear relationship between Chance and the following features: GRE, TOEFL, and CGPA. The seems to be some relationship between SOP, LOR, Urate with respect to Chance. Since there are few possible rating options for those 3 features, it can be harder to tell if there is a relationship, but there seems to be a slight positive trend. These 3 features will not be useful by themselves, but can be useful to bolster a model that already contains GRE, TOEFL, or CGPA.
+
+# 7. Confirm the validity of five major linear regression assumptions and comment on them.
+
+```{r}
+test_model <- lm(Chance~GRE+TOEFL+Urate+SOP+LOR+CGPA, data = Grad)
+```
+
+## 7.1. Existence
+This assumption is always true for any regression model. Since a model can be made from the data, this assumption is true
+
+## 7.2. Independence
+Data is not a time-series. Each entry is independent of each other. Thus this assumption is true.
+
+## 7.3. Linearity
+
+```{r}
+plot(test_model,1)
+```
+Residuals are around a horizontal line without distinct patterns. This indicates Linearity. This assumption holds true.
+
+## 7.4. Homoscedasticity
+
+```{r}
+plot(test_model, 3)
+```
+
+```{r}
+lmtest::bptest(test_model)
+```
+
+While there seems to be less variance where Chance of Admission increases, the Breusch-Pagan Test at $\alpha =0.05$ passes. This confirms the Homoscedasticity assumption.
+
+## 7.5. 
+
+```{r}
+plot(test_model, 2)
+```
+```{r}
+sresid <- MASS::studres(test_model) #using MASS package function to transform data easily
+shapiro.test(sresid)
+```
+
+Most of the points fall along the reference line In the QQ plot. The left endpoints do deviate, suggesting the distribution is left-skewed. The model passes the Shapiro-Wilk test at $\alpha =0.05$. This confirms the Normality assumption of the model.
+
+# 8. Choose the best three independent variables based on your immediate insight into the relationship and list them.
+The best three independent variables based on the scatter plots in section 5 are GRE, TOEFL, CGPA. The model is $Y = \beta_0 +\beta_1X_1 +\beta_2X_2 + \beta_3X_3 + E$
+Y: Chance
+X1: GRE
+X2: TOEFL
+X3: CGPA
+E: Error
+
+# 9. Build up a table, including the correlation between all independent variables and the response variable.
+
+```{r}
+model_corr_matrix <- cor(Grad[,-1],use = "pairwise.complete.obs")
+model_corr_matrix
+```
+All the features have a positive correlation with admission chance. It can be deduced that it will be worth testing all of these features in the model coefficient they all display correlation with the response variable. The relationship between correlation coefficient and slope is that their signs match. When Correlation coefficient is positive, slope is positive, and when it is negative, slope is negative.
+
+# 10. Report the result of hypothesis testing for the correlation coefficient of each independent variable. $\alpha = 0.05$
+
+## 10.1. GRE vs Chance
+
+```{r}
+cor.test(Grad$GRE, Grad$Chance, method = "pearson")
+```
+## 10.2.TOEFL vs Chance
+
+```{r}
+cor.test(Grad$TOEFL, Grad$Chance, method = "pearson")
+```
+## 10.3. Urate vs Chance
+
+```{r}
+cor.test(Grad$Urate, Grad$Chance, method = "pearson")
+```
+## 10.4. SOP vs Chance
+
+```{r}
+cor.test(Grad$SOP, Grad$Chance, method = "pearson")
+```
+## 10.5. LOR vs Chance
+
+```{r}
+cor.test(Grad$LOR, Grad$Chance, method = "pearson")
+```
+## 10.6. CGPA vs Chance
+
+```{r}
+cor.test(Grad$CGPA, Grad$Chance, method = "pearson")
+```
+
+# 11. Build up the univariate models
+
+## 11.1. Chance regression on GRE
+```{r}
+lm_1 <- lm(
+  formula = Chance ~ GRE,
+  data = Grad
+)
+anova(lm_1)
+summary(lm_1)
+```
+
+The model is: $Chance=-243.608 + 0.9976*GRE + E$
+
+## 11.2. Chance regression on TOEFL
+
+```{r}
+lm_2 <- lm(
+  formula = Chance ~ TOEFL,
+  data = Grad
+)
+anova(lm_2)
+summary(lm_2)
+```
+The model is : $Chance = -127.34 + 1.8599*TOEFL + E$
+
+## 11.3. Chance regression on Urate
+```{r}
+lm_3 <- lm(
+  formula = Chance ~ Urate,
+  data = Grad
+)
+anova(lm_3)
+summary(lm_3)
+```
+The model is : $Chance = 45.054 + 8.868*Urate + E$
+
+## 11.4. Chance regression on SOP
+```{r}
+lm_4 <- lm(
+  formula = Chance ~ SOP,
+  data = Grad
+)
+anova(lm_4)
+summary(lm_4)
+```
+
+The model is : $Chance = 39.894 + 9.571*SOP + E$
+
+## 11.5. Chance regression on LOR
+```{r}
+lm_5 <- lm(
+  formula = Chance ~ LOR,
+  data = Grad
+)
+anova(lm_5)
+summary(lm_5)
+```
+The model is : $Chance = 35.726 + 10.633*LOR + E$
+
+## 11.6. Chance Regression on CGPA
+```{r}
+lm_6 <- lm(
+  formula = Chance ~ CGPA,
+  data = Grad
+)
+anova(lm_6)
+summary(lm_6)
+```
+
+The model is : $Chance = -107.22 + 52.23*CGPA +E$
+
+# 12. Report the ANOVA table for two variables with the highest R-square value? What conclusion is achievable looking at these tables?
+
+## 12.1. ANOVA for CGPA model
+```{r}
+anova(lm_6)
+```
+## 12.2. ANOVA for GRE model
+```{r}
+anova(lm_1)
+```
+Both of these variables are significant by themselves. But the CGPA has much less error than the GRE model. This means that CGPA explains more of the variance in Chance than GRE.
+
+# 13. Build up a model, including all six variables available in the dataset.
+
+```{r}
+full_model <- lm(Chance~GRE+TOEFL+Urate+SOP+LOR+CGPA, data = Grad)
+anova(full_model)
+summary(full_model)
+```
+The model is : $Chance = -141.4185 + 0.2270*GRE + 0.2762*TOEFL + 0.5995*Urate - 0.2*SOP +  2.2784*LOR + 30.0138*CGPA +E$
+Urate and SOP are not Significant at $\alpha = 0.05$
+
+# 14. Remove all non-significant variables from the model and rebuild the model.
+
+```{r}
+best_model <- lm(Chance~GRE+TOEFL+LOR+CGPA, data = Grad)
+anova(best_model)
+summary(best_model)
+```
+The model is : $Chance = -146.2511 + 0.2311*GRE + 0.2929*TOEFL + 2.3960*LOR + 30.7403*CGPA + E$
+
+The is not much of a difference of between the anova tables outside of there being less variables. Also mean square error is lower in the model from section 14.
+
+# 15. Build up confidence bands and prediction bands for all records.
+```{r}
+test_df = Grad[, c(2:7)]
+conf_bands <- predict(best_model, newdata = test_df, interval = "confidence")
+write.csv(conf_bands,"confidenceBands.csv")
+head(conf_bands, 10)
+```
+```{r}
+pred_bands <- predict(best_model, newdata = test_df, interval = "prediction")
+write.csv(pred_bands,"predictionBands.csv")
+head(pred_bands, 10)
+```
+
+# 16. Write the appropriate equation to predict the admission chance with variables included in final model from section 14.
+
+$Chance = -146.2511 + 0.2311*GRE + 0.2929*TOEFL + 2.3960*LOR + 30.7403*CGPA$
+
+The Intercept has no meaning in this case. With 0 for GRE, TOEFL, LOR, CGPA, one would have a negative $146%$ chance of admission. This number is outside the valid range of chance thus no meaningful information can be gathered from it. 
+
+The meaning of the slope is that for every 1 point increase in GRE, admission chance increases by $0.2311%$. For every 1 point increase in TOEFL, admission chance increases by $0.2929%$. For every 1 point increase in LOR, admission chance increases by $2.3960%$. For every 1 point in CGPA, admission chance increases by $30.7403%$.
+
+# 17. What conclusion can you arrive at from this exploration in terms of the suitability of descriptive statistics and regression in data exploration? What is the recommendation that you would provide future data explorations to include as a result necessarily?
+
+Exploratory Data Analysis is a necessary step before developing models for a data set. Descriptive statistics of the data set and Visualizations made from them along with basic regression were able to paint a picture of the data. It allows for deduction of which type of model to train and which features will have the most weight. Future data explorations should scale the data to lie between 0 and 1. Along with data scaling, more models should be explored. There are more powerful linear regression models. Such models include Batch Gradient Descent, Stochastic Gradient Descent, Ridge Regression, Lasso Regression, ElasticNet regression. Polynomial and interaction feature transformation can be used as well to increase the number of features in the model potentially increasing accuracy. A train/test split of the data set should also be utilized in order to prevent over fitting of such models.

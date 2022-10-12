@@ -1,0 +1,296 @@
+---
+title: "Project 2"
+author: "Matthias Rathbun"
+date: "`r Sys.Date()`"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(fig.width=12, fig.height=8) 
+```
+
+```{r}
+rm(list=ls())
+```
+
+```{r}
+options(
+  digits = 4
+)
+```
+
+# 1. Load the Data and Perform Basic Exploratory Data Analysis
+
+```{r}
+df <- read.csv(
+  file = "qsar_fish_toxicity.csv",
+  header = FALSE, sep = ";"
+)
+names(df) <- c("CIC0", "SM1_Dz", "GATS1i", "NdsCH", "NdssC", "MLOGP", "LC50")
+```
+
+```{r}
+head(df,10)
+```
+
+```{r}
+tail(df,10)
+```
+
+```{r}
+
+summary(
+  object = df
+)
+
+```
+```{r}
+par(mfrow=c(3,2))
+hist(df[,1],xlab = "CIC0", main = "Histogram of CIC0")
+hist(df[,2],xlab = "SM1_Dz", main = "Histogram of SM1_Dz")
+hist(df[,3],xlab = "GATS1i", main = "Histogram of GATS1i")
+hist(df[,6],xlab = "MLOGP", main = "Histogram of MLOGP")
+hist(df[,7],xlab = "LC50", main = "Histogram of LC50")
+```
+
+```{r}
+par(mfrow=c(3,2))
+plot(x = df$CIC0, y = df$LC50, xlab="CIC0", ylab="LC50")
+plot(x = df$SM1_Dz, y = df$LC50, xlab="SM1_Dz", ylab="LC50")
+plot(x = df$GATS1i, y = df$LC50, xlab="GATS1i", ylab="LC50")
+plot(x = df$NdsCH, y = df$LC50, xlab="NdsCH", ylab="LC50")
+plot(x = df$NdssC, y = df$LC50, xlab="NdssC", ylab="LC50")
+plot(x = df$MLOGP, y = df$LC50, xlab="MLOGP", ylab="LC50")
+```
+
+```{r}
+library(ggplot2)
+
+library(GGally)
+
+ggpairs(df)
+```
+
+```{r}
+ggcorr(df)
+```
+# 2. Train Test Split and Preprocessing
+```{r}
+library(caret)
+set.seed(42)
+cols <- c("CIC0", "SM1_Dz", "GATS1i", "NdsCH", "NdssC", "MLOGP")
+df_scaled <- df
+df_scaled[cols] <- scale(df[cols])
+
+indexes = createDataPartition(df$LC50, p = .80, list = F)
+train = df_scaled[indexes, ]
+test = df_scaled[-indexes, ]
+X_train = train[, -7]
+y_train = train[, 7]
+X_test = test[, -7]
+y_test = test[, 7]
+```
+
+
+
+# 3. Univariate Regression
+
+## CIC0 vs LC50
+
+```{r}
+lm_1 <- lm(
+  formula = LC50 ~ CIC0,
+  data = train
+)
+anova(lm_1)
+summary(lm_1)
+y_pred = predict(lm_1, X_test)
+
+mse = mean((y_test - y_pred)^2)
+mae = caret::MAE(y_test, y_pred)
+rmse = caret::RMSE(y_test, y_pred)
+
+cat("MSE: ", mse, "MAE: ", mae, " RMSE: ", rmse)
+```
+
+## SM1_Dz vs LC50
+```{r}
+lm_2 <- lm(
+  formula = LC50 ~ SM1_Dz,
+  data = train
+)
+anova(lm_2)
+summary(lm_2)
+y_pred = predict(lm_2, X_test)
+
+mse = mean((y_test - y_pred)^2)
+mae = caret::MAE(y_test, y_pred)
+rmse = caret::RMSE(y_test, y_pred)
+
+cat("MSE: ", mse, "MAE: ", mae, " RMSE: ", rmse)
+```
+
+## GATS1i vs LC50
+```{r}
+lm_3 <- lm(
+  formula = LC50 ~ GATS1i,
+  data = train
+)
+anova(lm_3)
+summary(lm_3)
+y_pred = predict(lm_3, X_test)
+
+mse = mean((y_test - y_pred)^2)
+mae = caret::MAE(y_test, y_pred)
+rmse = caret::RMSE(y_test, y_pred)
+
+cat("MSE: ", mse, "MAE: ", mae, " RMSE: ", rmse)
+```
+## NdsCH vs LC50
+```{r}
+lm_4 <- lm(
+  formula = LC50 ~ NdsCH,
+  data = train
+)
+anova(lm_4)
+summary(lm_4)
+y_pred = predict(lm_4, X_test)
+
+mse = mean((y_test - y_pred)^2)
+mae = caret::MAE(y_test, y_pred)
+rmse = caret::RMSE(y_test, y_pred)
+
+cat("MSE: ", mse, "MAE: ", mae, " RMSE: ", rmse)
+```
+
+## NdssC vs LC50
+
+```{r}
+lm_5 <- lm(
+  formula = LC50 ~ NdssC,
+  data = train
+)
+anova(lm_5)
+summary(lm_5)
+y_pred = predict(lm_5, X_test)
+
+mse = mean((y_test - y_pred)^2)
+mae = caret::MAE(y_test, y_pred)
+rmse = caret::RMSE(y_test, y_pred)
+
+cat("MSE: ", mse, "MAE: ", mae, " RMSE: ", rmse)
+```
+
+## MLOGP vs LC50
+
+```{r}
+lm_6 <- lm(
+  formula = LC50 ~ MLOGP,
+  data = train
+)
+anova(lm_6)
+summary(lm_6)
+y_pred = predict(lm_6, X_test)
+
+mse = mean((y_test - y_pred)^2)
+mae = caret::MAE(y_test, y_pred)
+rmse = caret::RMSE(y_test, y_pred)
+
+cat("MSE: ", mse, "MAE: ", mae, " RMSE: ", rmse)
+```
+
+
+# Multivariate Model
+## All 6 factors
+```{r}
+library(car)
+mvlm_1 <- lm(
+  formula = LC50~.,
+  data = train
+)
+anova(mvlm_1)
+summary(mvlm_1)
+vif(mvlm_1)
+
+y_pred = predict(mvlm_1, X_test)
+
+mse = mean((y_test - y_pred)^2)
+mae = caret::MAE(y_test, y_pred)
+rmse = caret::RMSE(y_test, y_pred)
+
+cat("MSE: ", mse, "MAE: ", mae, " RMSE: ", rmse)  
+
+
+
+```
+
+## Reduced Model (Without NdssC)
+```{r}
+mvlm_2 <- lm(
+  formula = LC50~.-NdssC,
+  data = train
+)
+anova(mvlm_2)
+summary(mvlm_2)
+vif(mvlm_2)
+y_pred = predict(mvlm_2, X_test)
+
+mse = mean((y_test - y_pred)^2)
+mae = caret::MAE(y_test, y_pred)
+rmse = caret::RMSE(y_test, y_pred)
+
+anova(mvlm_2, mvlm_1)
+cat("MSE: ", mse, "MAE: ", mae, " RMSE: ", rmse)
+```
+## Interaction Testing
+
+```{r}
+mvlm_3 <- lm(
+  formula = LC50~.^2,
+  data = train
+)
+anova(mvlm_3)
+summary(mvlm_3)
+
+y_pred = predict(mvlm_3, X_test)
+
+mse = mean((y_test - y_pred)^2)
+mae = caret::MAE(y_test, y_pred)
+rmse = caret::RMSE(y_test, y_pred)
+
+cat("MSE: ", mse, "MAE: ", mae, " RMSE: ", rmse)
+```
+```{r}
+mvlm_4 <- lm(
+  formula = LC50~CIC0+SM1_Dz+GATS1i+NdsCH+MLOGP+CIC0*NdsCH+CIC0*MLOGP+CIC0*NdssC+GATS1i*NdsCH+NdsCH*MLOGP,
+  data = train
+)
+anova(mvlm_4)
+summary(mvlm_4)
+
+y_pred = predict(mvlm_4, X_test)
+
+mse = mean((y_test - y_pred)^2)
+mae = caret::MAE(y_test, y_pred)
+rmse = caret::RMSE(y_test, y_pred)
+
+
+anova(mvlm_4, mvlm_3)
+cat("MSE: ", mse, "MAE: ", mae, " RMSE: ", rmse)
+```
+Even though R_squared is better for this model, the MSE on the test dataset goes up. Adding interaction terms leads to potential overfitting and thus will be avoided.
+
+## KNN Regression
+```{r}
+knnmodel = knnreg(X_train, y_train, k = 6)
+y_pred = predict(knnmodel, data.frame(X_test))
+mse = mean((y_test - y_pred)^2)
+mae = caret::MAE(y_test, y_pred)
+rmse = caret::RMSE(y_test, y_pred)
+cat("MSE: ", mse, "MAE: ", mae, " RMSE: ", rmse)
+```
+```{r}
+plot(mvlm_2, 3)
+```
+

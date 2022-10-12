@@ -1,0 +1,237 @@
+---
+title: "A linear regression model"
+author: "Rong Zhou"
+date: "1/22/2022"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This example is taken from 
+A Modern Approach to Regression with R
+https://gattonweb.uky.edu/sheather/book/
+
+# Set up the work space
+
+First I want to reduce the number of displayed digits.
+
+```{r}
+options(
+  digits = 4
+)
+```
+
+# 1. Load the data
+
+In R, there is a special function for reading a data set into R. For .txt files, you will probably use read.table().
+
+Use file.path(choose.files()) to get a data set's file path in Windows.
+
+```{r}
+production <- read.table(
+  file = "C:\\zrwork\\UCF\\2022Spring\\4164\\Files\\Production.txt",
+  header = TRUE
+)
+```
+
+Let's look at our data.
+
+```{r}
+production
+```
+
+#2. Look at the dataset
+
+The head() and tail() functions print the first and last rows of a dataset. This is an easy way to quickly get a feel for your data.
+
+It is not possible to visually inspect large datasets. We work with large datasets by taking snapshots and summaries of the data.
+
+Let's print the dataset and limit our print to include only the first ten observations.
+
+```{r}
+head(production,10)
+```
+
+Let's print the dataset and limit our print to include only the last ten observations.
+
+```{r}
+tail(production,10)
+```
+
+#3. Summarise the data
+
+The summary() function prints summary statistics of a dataset.
+
+```{r}
+summary(
+  object = production
+)
+```
+
+# Size of the data
+
+When processing data, you need to know how much data you started with and how much you currently have. The dim() function returns the number of rows and columns; nrow() returns the number of rows. ncol() returns the number of columns.
+
+complete.cases() returns a logical vector indicating which rows have zero missing values. 
+
+```{r}
+dim(production)
+nrow(production)
+ncol(production)
+sum(complete.cases(production))
+```
+
+This is a regression class, so let's plot a scatter plot. We do this to see if building a regression model is reasonable.
+
+```{r}
+par(
+  mfrow=c(1,1)
+)
+plot(
+  x = production$RunSize,
+  y = production$RunTime,
+  xlab="Run Size", 
+  ylab="Run Time"
+)
+```
+
+# A simple linear regression model
+
+Let's build a simple linear regression model.
+
+```{r}
+lm_production <- lm(
+  formula = RunTime~RunSize,
+  data = production
+)
+```
+
+Now let's put the linear model on our scatter plot to see if the model is reasonable.
+
+```{r}
+plot(
+  x = production$RunSize,
+  y = production$RunTime,
+  xlab="Run Size", 
+  ylab="Run Time"
+)
+abline(
+  reg = lm_production,
+  col = "red"
+)
+```
+
+# Hypothesis testing
+
+Hypothesis testing is critical to small data analytics. anova() and summary() give us the most important tests for linear regression.
+
+```{r}
+anova(
+  object = lm_production
+)
+summary(
+  object = lm_production
+)
+```
+
+Let's check those t-values from the summary() output.
+
+```{r}
+149.7477/8.3282
+0.2592/0.0371
+```
+
+# Confidence intervals for the coefficients
+
+Now let's look at confidence intervals for the coefficients.
+
+```{r}
+confint(
+  object = lm_production,
+  level=0.95
+)
+```
+
+# Expected values and predictions
+
+```{r}
+score_data <- data.frame(
+  RunSize = seq(
+    from = min(production$RunSize),
+    to = max(production$RunSize),
+    by = 5
+  )
+)
+head(score_data)
+
+predict_none <- predict(
+  object = lm_production,
+  newdata = score_data,
+  interval = "none",
+  level=0.95
+)
+head(predict_none)
+
+predict_confidence <- predict(
+  object = lm_production,
+  newdata = score_data,
+  interval = "confidence",
+  level=0.95
+)
+head(predict_confidence)
+
+predict_prediction <- predict(
+  object = lm_production,
+  newdata = score_data,
+  interval = "prediction",
+  level=0.95
+)
+head(predict_prediction)
+```
+
+Now let's add the 
+expected values/predictions (red),
+expected value confidence intervals (blue),
+prediction intervals (purple).
+
+```{r}
+plot(
+  x = production$RunSize,
+  y = production$RunTime,
+  xlab="Run Size", 
+  ylab="Run Time"
+)
+abline(
+  reg = lm_production,
+  col = "red"
+)
+lines(
+  x = score_data$RunSize,
+  y = predict_confidence[,"lwr"],
+  col = "blue"
+)
+lines(
+  x = score_data$RunSize,
+  y = predict_confidence[,"upr"],
+  col = "blue"
+)
+lines(
+  x = score_data$RunSize,
+  y = predict_prediction[,"lwr"],
+  col = "purple"
+)
+lines(
+  x = score_data$RunSize,
+  y = predict_prediction[,"upr"],
+  col = "purple"
+)
+```
+Save the confidence intervals into a excel file:
+
+```{r}
+write.csv(predict_confidence,file = "C:\\zrwork\\UCF\\2022Spring\\4164\\Files\\confidence_interval.csv")
+
+write.csv(predict_prediction,file = "C:\\zrwork\\UCF\\2022Spring\\4164\\Files\\prediction_interval.csv")
+```
